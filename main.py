@@ -95,6 +95,10 @@ class Argument:
 
 
 class Function:
+	"""
+	Modeling and processing of a function
+	"""
+
 	def __init__(self) -> NoReturn:
 		self.name: str = str()
 		self.arguments: List[Argument] = list()
