@@ -1,10 +1,19 @@
 #!/usr/bin/python
+
+#  Copyright (c) 2021, Takuma.
+#  Respect intellectual property, and do not delete these comments.
+
 # -*- coding: <utf-8> -*-
 
 import os
 import glob
 from typing import *
 import re
+
+__author__ = "Takuma"
+__version__ = "1.0"
+__email__ = "dev.takuma@gmail.com"
+__status__ = "development"
 
 OUTPUT_DIRECTORY: str = 'bin'
 INPUT_DIRECTORY: str = 'src'
@@ -17,34 +26,71 @@ TYPE_CORRESPONDENCES = {
 
 
 def get_python_type(arg_type: str) -> str:
+	"""
+	Return python type for c++ arg_type
+	:param arg_type: argument's type in C++
+	:return: Python's equivalent for arg_type
+	"""
 	if arg_type in TYPE_CORRESPONDENCES:
 		return TYPE_CORRESPONDENCES[arg_type]
 	raise Exception("Unknown C++ type: {}".format(arg_type))
 
 
 class Argument:
+	"""
+	Model an argument, and allows to determine its equivalent in Python.
+	"""
 
 	def __init__(self, name: str, arg_type: str) -> NoReturn:
+		"""
+		Argument class constructor.
+		:param name: Argument's name
+		:param arg_type: Argument's type
+		"""
 		self.name: str = name
 		self.arg_type: str = arg_type
 
 	def set_name(self, name: str) -> NoReturn:
+		"""
+		Set Argument's name
+		:param name: Argument's name
+		"""
 		self.name = name
 
 	def set_arg_type(self, arg_type: str) -> NoReturn:
+		"""
+		Set Argument's type
+		:param arg_type: Argument's type
+		"""
 		self.arg_type = arg_type
 
 	def get_name(self) -> str:
+		"""
+		Get Argument's name
+		:return: str: Argument's name
+		"""
 		return self.name
 
 	def get_arg_type(self) -> str:
+		"""
+		Get Argument's type (C++)
+		:return: str: Argument's type
+		"""
 		return self.arg_type
 
 	def render(self) -> Union[str, None]:
+		"""
+		Get Python's equivalent of current argument
+		:return: str: "name: type"
+		"""
 		if self.name != str() and self.arg_type != str():
 			return f'{self.name}: {(get_python_type(self.arg_type))}'
 
 	def __str__(self) -> str:
+		"""
+		Get Argument's name
+		:return: str: Argument's name
+		"""
 		return self.name
 
 
@@ -175,6 +221,9 @@ class SrcFiles:
 
 
 def process() -> NoReturn:
+	"""
+	Initialize SrcFiles objet, and start process.
+	"""
 	print("Getting all files in src directory")
 
 	files = SrcFiles('src')
@@ -186,4 +235,5 @@ if __name__ == '__main__':
 	print("I was coded by Takuma! A Frenchman who loves baguettes!")
 	print("This tools only support one module per files...")
 	print("And module initialisation have to be on only one line.")
+	print("As it's by default.")
 	process()
