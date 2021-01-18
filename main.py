@@ -2,6 +2,7 @@
 
 #  Copyright (c) 2021, Takuma.
 #  Respect intellectual property, and do not delete these comments.
+#  Thanks to Gurgarath for his help !
 
 # Perl regex: {((?>[^{}]++|(?R))*)}
 
@@ -214,6 +215,7 @@ class SrcFile:
 				self.methods_dic_name = groups[1]
 
 	def read_module_content(self) -> NoReturn:
+		# --> Remove comments
 		content: str = "".join(self.lines)
 		methods: Match = re.search(self.methods_dic_name + '\[]((.|\n)*){((.|_n)*)}', content)
 
@@ -227,11 +229,10 @@ class SrcFile:
 				if len(m) == 2:
 					self.methods[m[0]] = m[1]
 		content = "".join(self.lines)
-		groups = re.search("{((?:[^{}]+|{([^{}]+)})*)}", content, re.MULTILINE).groups()
-		print(f"{self.module_name}:")
-		for group in groups:
-			print(group)
-			print("--------------------")
+		with open("test.txt", "w", encoding="utf-8") as file:
+			file.write(content)
+		f_content = re.findall("PyObject\s*\*\s*(.*)\(.*\)\s*{((?:[^{}]+|{([^{}]+)}){3})}", content)
+		print(f_content)
 
 	#  Continue
 
