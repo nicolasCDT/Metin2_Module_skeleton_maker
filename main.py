@@ -3,6 +3,8 @@
 #  Copyright (c) 2021, Takuma.
 #  Respect intellectual property, and do not delete these comments.
 
+# Perl regex: {((?>[^{}]++|(?R))*)}
+
 # -*- coding: <utf-8> -*-
 
 import os
@@ -100,6 +102,9 @@ class Function:
 	"""
 
 	def __init__(self) -> NoReturn:
+		"""
+		Initialization for Function class
+		"""
 		self.name: str = str()
 		self.arguments: List[Argument] = list()
 		self.returned_value: Union[None, Argument] = None
@@ -107,37 +112,78 @@ class Function:
 		self.f_return: List[Argument] = list()
 
 	def set_name(self, name: str) -> NoReturn:
+		"""
+		Set function's name
+		:param name: str: Function's name
+		"""
 		self.name = name
 
 	def add_argument(self, argument: Argument) -> NoReturn:
+		"""
+		Add one function's argument
+		:param argument: Argument: arg
+		"""
 		self.arguments.append(argument)
 
 	def get_name(self) -> str:
+		"""
+		Get function's name
+		:return: str: function's name
+		"""
 		return self.name
 
 	def set_content(self, content: str) -> NoReturn:
+		"""
+		Set function's content
+		:param content: str: function's content
+		"""
 		self.content = content
 
 	def get_content(self) -> str:
+		"""
+		Get function's content
+		:return: str: function's content
+		"""
 		return self.content
 
 	def set_returned_value(self, value: Argument) -> NoReturn:
+		"""
+		Set function's returned values
+		:param value: Argument: value
+		"""
 		self.returned_value = value
 
 	def get_returned_value(self) -> Argument:
+		"""
+		Get function's returned value
+		:return: Argument: returned value
+		"""
 		return self.returned_value
 
 	def get_argument(self, index: int = -1) -> Union[List[Argument], Argument]:
+		"""
+		Get argument(s)
+		:param index: index of element
+		:return: Union[List[Argument], Argument]: argumen(s)
+		"""
 		if 0 <= index < len(self.arguments):
 			return self.arguments[index]
 		return self.arguments
 
 	def render(self) -> Union[str, None]:
+		"""
+		Render a function
+		:return: Union[str, None]: function's render
+		"""
 		if self.name != str() and self.arguments != list():
 			return ""  # make render and return it
 		return None
 
 	def __str__(self) -> str:
+		"""
+		String for represent a functions
+		:return: str: representation
+		"""
 		return "{}({})".format(
 			self.name,
 			", ".join(str(arg) for arg in self.arguments)
@@ -180,7 +226,14 @@ class SrcFile:
 			for m in methods_list:
 				if len(m) == 2:
 					self.methods[m[0]] = m[1]
-		print("".join(self.lines))
+		content = "".join(self.lines)
+		groups = re.search("{((?:[^{}]+|{([^{}]+)})*)}", content, re.MULTILINE).groups()
+		print(f"{self.module_name}:")
+		for group in groups:
+			print(group)
+			print("--------------------")
+
+	#  Continue
 
 	def process(self) -> NoReturn:
 		self.read_lines()
@@ -195,19 +248,37 @@ class SrcFile:
 
 
 class SrcFiles:
+	"""
+	Class for processing on multiple SrcFile
+	"""
 
 	def __init__(self, path: str) -> NoReturn:
+		"""
+		Initialization of class
+		:param path: strm path of files
+		"""
 		self.files: List[SrcFile] = list()
 		self.path: str = path
 
 	def add_file(self, file: str) -> NoReturn:
+		"""
+		Add SrcFile's path
+		:param file: str: path
+		"""
 		current_file: SrcFile = SrcFile(file)
 		self.files.append(current_file)
 
 	def remove_file(self, file: SrcFile) -> NoReturn:
+		"""
+		Remove path from list
+		:param file: src: file's path to delete
+		"""
 		self.files.remove(file)
 
 	def process(self) -> NoReturn:
+		"""
+		Processing on each SrcFile
+		"""
 		input_files = glob.glob(f"{self.path}/*", recursive=True)
 		for file in input_files:
 			if os.path.exists(file):
@@ -221,6 +292,10 @@ class SrcFiles:
 				self.remove_file(file)
 
 	def __str__(self) -> str:
+		"""
+		Making string to represent class
+		:return: str: representation
+		"""
 		return f"[{', '.join(str(x) for x in self.files)}]"
 
 
