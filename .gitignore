@@ -125,5 +125,5 @@ dmypy.json
 .pyre/
 .idea/
 
-# Test file
-test.py
+bin/
+src/

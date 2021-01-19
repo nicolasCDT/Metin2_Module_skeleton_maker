@@ -4,13 +4,12 @@
 #  Respect intellectual property, and do not delete these comments.
 #  Thanks to Gurgarath for his help !
 
-# Perl regex: {((?>[^{}]++|(?R))*)}
-
 # -*- coding: <utf-8> -*-
 
 import os
 import glob
 from typing import *
+from typing import IO
 import re
 
 __author__ = "Takuma"
@@ -21,22 +20,107 @@ __status__ = "development"
 OUTPUT_DIRECTORY: str = 'bin'
 INPUT_DIRECTORY: str = 'src'
 
-TYPE_CORRESPONDENCES = {
-	"byte": "int",
-	"int": "int",
-	"string": "str"
+FUNCTIONS_TYPE_CORRESPONDENCES: dict = {
+	"GetLong": "int",
+	"GetDouble": "int",
+	"GetFloat": "float",
+	"GetByte": "int",
+	"GetInteger": "int",
+	"GetUnsignedLong": "int",
+	"GetUnsignedInteger": "int",
+	"GetString": "str",
+	"GetBoolean": "bool"
 }
 
+LETTER_TYPE_CORRESPONDENCES: dict = {
+	'i': "int",
+	's': "str",
+	'c': "int",
+	'l': "int",
+	'f': "float",
+	'b': "bool"
+}
 
-def get_python_type(arg_type: str) -> str:
+RESERVED_KEYWORD: list = [
+	"False", "def", "if", "raise", "None", "del", "import", "return", "True", "elif", "in", "try", "and", "else", "is",
+	"while", "as", "except", "lambda", "with", "assert", "finally", "nonlocal", "yield", "break", "for", "not", "class",
+	"from", "or", "continue", "global", "pass"
+]
+
+
+def get_python_type_by_function(arg_type: str) -> str:
 	"""
-	Return python type for c++ arg_type
+	Return python type for c++ arg_type with function as reference
 	:param arg_type: argument's type in C++
 	:return: Python's equivalent for arg_type
 	"""
-	if arg_type in TYPE_CORRESPONDENCES:
-		return TYPE_CORRESPONDENCES[arg_type]
+	if arg_type in FUNCTIONS_TYPE_CORRESPONDENCES:
+		return FUNCTIONS_TYPE_CORRESPONDENCES[arg_type]
 	raise Exception("Unknown C++ type: {}".format(arg_type))
+
+
+def get_python_type_by_letter(arg_type: str) -> str:
+	"""
+	Return python type for c++ arg_type with letter as reference
+	:param arg_type: argument's type in C++
+	:return: Python's equivalent for arg_type
+	"""
+	if arg_type in LETTER_TYPE_CORRESPONDENCES:
+		return LETTER_TYPE_CORRESPONDENCES[arg_type]
+	raise Exception("Unknown C++ type: {}".format(arg_type))
+
+
+def comment_remover(text) -> str:
+	"""
+	Remove comments from C++ text
+	Function by Markus Jarderot
+	:param text: str: C++ code
+	:return: str: code uncomment.
+	"""
+
+	def replacer(match):
+		s: str = match.group(0)
+		if s.startswith('/'):
+			return " "
+		else:
+			return s
+
+	pattern = re.compile(
+		r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
+		re.DOTALL | re.MULTILINE
+	)
+	return re.sub(pattern, replacer, text)
+
+
+def write_head_block(file: IO) -> NoReturn:
+	"""
+	Write in file the common file's header
+	:param file: file
+	"""
+	file.write("""from typing import *
+
+
+__author__ = "Takuma"
+__version__ = "1.0"
+__email__ = "dev.takuma@gmail.com"
+__status__ = "development"
+
+
+#  Copyright (c) 2021, Takuma.
+#  Respect intellectual property, and do not delete these comments.
+#  Thanks to Gurgarath for his help !
+""")
+
+
+def check_render_space() -> NoReturn:
+	"""
+	Check if render file can be created by check if output directory is/can be created
+	"""
+	if not os.path.exists(OUTPUT_DIRECTORY):
+		try:
+			os.makedirs("bin")
+		except Exception:
+			raise Exception("Can't create output directory")
 
 
 class Argument:
@@ -52,34 +136,11 @@ class Argument:
 		"""
 		self.name: str = name
 		self.arg_type: str = arg_type
+		self.check_name()
 
-	def set_name(self, name: str) -> NoReturn:
-		"""
-		Set Argument's name
-		:param name: Argument's name
-		"""
-		self.name = name
-
-	def set_arg_type(self, arg_type: str) -> NoReturn:
-		"""
-		Set Argument's type
-		:param arg_type: Argument's type
-		"""
-		self.arg_type = arg_type
-
-	def get_name(self) -> str:
-		"""
-		Get Argument's name
-		:return: str: Argument's name
-		"""
-		return self.name
-
-	def get_arg_type(self) -> str:
-		"""
-		Get Argument's type (C++)
-		:return: str: Argument's type
-		"""
-		return self.arg_type
+	def check_name(self):
+		if self.name in RESERVED_KEYWORD:
+			self.name = '_' + self.name
 
 	def render(self) -> Union[str, None]:
 		"""
@@ -87,7 +148,7 @@ class Argument:
 		:return: str: "name: type"
 		"""
 		if self.name != str() and self.arg_type != str():
-			return f'{self.name}: {(get_python_type(self.arg_type))}'
+			return f'{self.name}: {(get_python_type_by_function(self.arg_type.lower()))}'
 
 	def __str__(self) -> str:
 		"""
@@ -97,7 +158,7 @@ class Argument:
 		return self.name
 
 
-class Function:
+class Method:
 	"""
 	Modeling and processing of a function
 	"""
@@ -108,7 +169,7 @@ class Function:
 		"""
 		self.name: str = str()
 		self.arguments: List[Argument] = list()
-		self.returned_value: Union[None, Argument] = None
+		self.returned_value: Union[None, str] = None
 		self.content: str = str()
 		self.f_return: List[Argument] = list()
 
@@ -140,26 +201,12 @@ class Function:
 		"""
 		self.content = content
 
-	def get_content(self) -> str:
-		"""
-		Get function's content
-		:return: str: function's content
-		"""
-		return self.content
-
-	def set_returned_value(self, value: Argument) -> NoReturn:
+	def set_returned_value(self, value: str) -> NoReturn:
 		"""
 		Set function's returned values
-		:param value: Argument: value
+		:param value: str: value
 		"""
 		self.returned_value = value
-
-	def get_returned_value(self) -> Argument:
-		"""
-		Get function's returned value
-		:return: Argument: returned value
-		"""
-		return self.returned_value
 
 	def get_argument(self, index: int = -1) -> Union[List[Argument], Argument]:
 		"""
@@ -171,14 +218,58 @@ class Function:
 			return self.arguments[index]
 		return self.arguments
 
-	def render(self) -> Union[str, None]:
+	def process(self) -> NoReturn:
+		"""
+		Read content and parse arguments + return
+		"""
+		args_matches = re.findall("PyTuple_(.*)\(.*,\s*(.*)\s*,\s*&(.*)\)\)", self.content)
+		args_matches = sorted(args_matches, key=lambda tup: tup[1])
+		for match in args_matches:
+			arg: Argument = Argument(match[2], match[0])
+			self.add_argument(arg)
+
+		return_match: List = re.findall("return\s*Py_BuildValue\(\"(.*)\"", self.content)
+		if return_match:
+			if len(return_match) == 1:
+				return_format: str = return_match[0].replace('#', '').replace('*',
+																			  '')  # Remove unknown format in Python
+				if len(return_format) == 1:
+					self.set_returned_value(get_python_type_by_letter(return_format.lower()))
+				else:
+					output_str: str = "Tuple["
+					for letter in return_format:
+						output_str += get_python_type_by_letter(letter.lower())
+						output_str += ", "
+					output_str = output_str[:-2] + "]"
+					self.set_returned_value(output_str)
+
+	def render(self) -> str:
 		"""
 		Render a function
-		:return: Union[str, None]: function's render
+		:return: str: function's render
 		"""
-		if self.name != str() and self.arguments != list():
-			return ""  # make render and return it
-		return None
+		if self.name != str():
+			render: str = f"\tdef {self.name}(self, "  # def xxx(self,_
+
+			# Arguments
+			if self.arguments:
+				for arg in self.arguments:
+					render += str(arg) + ", "
+			render = render[:-2] + ")"
+
+			# Return
+			render += " -> "
+			if self.returned_value:
+				render += self.returned_value
+			else:
+				render += "NoReturn"
+			render += ":"
+
+			# Body
+			render += "\n\t\tpass\n"
+
+			return render
+		return ""
 
 	def __str__(self) -> str:
 		"""
@@ -192,20 +283,34 @@ class Function:
 
 
 class SrcFile:
+	"""
+	Modeling of one source file
+	"""
+
 	def __init__(self, path: str) -> NoReturn:
+		"""
+		Initialization for SrcFile class
+		"""
 		self.path: str = path
 		self.lines: List[str] = list()
 		self.module_name: str = str()
 		self.methods_dic_name: str = str()
-		self.constants: str = str()
+		self.constants: str = str()  # s_methods
 		self.methods: Dict[str, str] = dict()  # s_methods\[\]((.|\n)*){((.|_n)*)} --> {.*\"(.*)\",(.*),.*} --> strip
-		self.methods_list_contents: List[Dict[str, str]] = list()  # PyObject\s*\*\s*(.*)\(.*\)(.|\n*){(.|\n)*?}
+		self.methods_list_contents: Dict[str, str] = dict()  # PyObject\s*\*\s*(.*)\(.*\)(.|\n*){(.|\n)*?}
+		self.methods_object: List[Method] = list()
 
 	def read_lines(self) -> NoReturn:
+		"""
+		Read files in utf-8 and save them
+		"""
 		with open(self.path, "r+", encoding="utf-8", errors="ignore") as file:
 			self.lines = file.readlines()
 
 	def read_module_name(self) -> NoReturn:
+		"""
+		Search line with module and get his name
+		"""
 		for line in self.lines:
 			if "Py_InitModule(" in line:
 				groups = re.search("Py_InitModule\(\\\"(.*?)\\\",\s*(.*)\)", line)
@@ -215,8 +320,11 @@ class SrcFile:
 				self.methods_dic_name = groups[1]
 
 	def read_module_content(self) -> NoReturn:
-		# --> Remove comments
+		"""
+		Read module content to find method and her content
+		"""
 		content: str = "".join(self.lines)
+		content = comment_remover(content)
 		methods: Match = re.search(self.methods_dic_name + '\[]((.|\n)*){((.|_n)*)}', content)
 
 		if not methods:
@@ -227,24 +335,67 @@ class SrcFile:
 		if methods_list:
 			for m in methods_list:
 				if len(m) == 2:
-					self.methods[m[0]] = m[1]
-		content = "".join(self.lines)
-		with open("test.txt", "w", encoding="utf-8") as file:
-			file.write(content)
-		f_content = re.findall("PyObject\s*\*\s*(.*)\(.*\)\s*{((?:[^{}]+|{([^{}]+)}){3})}", content)
-		print(f_content)
+					self.methods[m[1].strip()] = m[0].strip()
+		occurrences: List = re.findall("PyObject\s*\*\s*(.*)\(.*\)\s*{((?:[^{}]+|{([^{}]+)}){3})}", content)
+		for occurrence in occurrences:
+			self.methods_list_contents[occurrence[0]] = occurrence[1]
 
-	#  Continue
+		to_delete: list = list()
+		for method in self.methods_list_contents:
+			if method not in self.methods.keys():
+				to_delete.append(method)
+		for method in to_delete:
+			self.methods_list_contents.pop(method)
+
+	def read_functions(self) -> NoReturn:
+		"""
+		Read all functions name, create object and work on it
+		:return:
+		"""
+		for method in self.methods_list_contents:
+			function = Method()
+			function.set_name(self.methods[method])
+			function.set_content(self.methods_list_contents[method])
+			function.process()
+			self.methods_object.append(function)
 
 	def process(self) -> NoReturn:
+		"""
+		Work on the file
+		"""
 		self.read_lines()
 		self.read_module_name()
 		self.read_module_content()
+		self.read_functions()
+
+	def render(self) -> NoReturn:
+		"""
+		Render a module
+		"""
+		if self.module_name == "":
+			return
+		check_render_space()
+		with open(f"{OUTPUT_DIRECTORY}/{self.module_name}.py", "w", encoding="utf-8") as rendering_file:
+			print(f"Rendering {self.module_name}...")
+			write_head_block(rendering_file)
+			rendering_file.write("\n\n")  # Two \n for conventions
+			rendering_file.write(f"class {self.module_name}:")
+			for method in self.methods_object:
+				rendering_file.write("\n")
+				rendering_file.write(method.render())
 
 	def has_module(self) -> bool:
+		"""
+		If file has module
+		:return: bool: has module
+		"""
 		return self.module_name != str()
 
 	def __str__(self) -> str:
+		"""
+		Make string who represent SrcFile current object
+		:return: str: representation
+		"""
 		return self.path
 
 
@@ -292,6 +443,9 @@ class SrcFiles:
 			if not file.has_module():
 				self.remove_file(file)
 
+		for file in self.files:
+			file.render()
+
 	def __str__(self) -> str:
 		"""
 		Making string to represent class
@@ -317,3 +471,4 @@ if __name__ == '__main__':
 	print("And module initialisation have to be on only one line.")
 	print("As it's by default.")
 	process()
+	print("Ended.")
