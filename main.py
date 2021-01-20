@@ -17,9 +17,13 @@ __version__ = "1.0"
 __email__ = "dev.takuma@gmail.com"
 __status__ = "development"
 
+# CONFIGURATION BLOCK
 OUTPUT_DIRECTORY: str = 'bin'
 INPUT_DIRECTORY: str = 'src'
 
+MAKE_ALL_IN_ONE_FILE: bool = False
+
+# DEVELOPMENT CONSTANTS
 FUNCTIONS_TYPE_CORRESPONDENCES: dict = {
 	"GetLong": "int",
 	"GetDouble": "int",
@@ -29,7 +33,8 @@ FUNCTIONS_TYPE_CORRESPONDENCES: dict = {
 	"GetUnsignedLong": "int",
 	"GetUnsignedInteger": "int",
 	"GetString": "str",
-	"GetBoolean": "bool"
+	"GetBoolean": "bool",
+	"GetObject": "object"
 }
 
 LETTER_TYPE_CORRESPONDENCES: dict = {
@@ -73,7 +78,6 @@ def get_python_type_by_letter(arg_type: str) -> str:
 def comment_remover(text) -> str:
 	"""
 	Remove comments from C++ text
-	Function by Markus Jarderot
 	:param text: str: C++ code
 	:return: str: code uncomment.
 	"""
@@ -92,7 +96,7 @@ def comment_remover(text) -> str:
 	return re.sub(pattern, replacer, text)
 
 
-def write_head_block(file: IO) -> NoReturn:
+def write_head_block(file: IO, ) -> NoReturn:
 	"""
 	Write in file the common file's header
 	:param file: file
@@ -128,27 +132,30 @@ class Argument:
 	Model an argument, and allows to determine its equivalent in Python.
 	"""
 
-	def __init__(self, name: str, arg_type: str) -> NoReturn:
+	def __init__(self, name: str, arg_type: Union[str, None]) -> NoReturn:
 		"""
 		Argument class constructor.
 		:param name: Argument's name
 		:param arg_type: Argument's type
 		"""
 		self.name: str = name
-		self.arg_type: str = arg_type
+		self.arg_type: Union[str, None] = arg_type
 		self.check_name()
 
 	def check_name(self):
 		if self.name in RESERVED_KEYWORD:
 			self.name = '_' + self.name
+		self.name = self.name.replace(".", "")
 
 	def render(self) -> Union[str, None]:
 		"""
 		Get Python's equivalent of current argument
 		:return: str: "name: type"
 		"""
-		if self.name != str() and self.arg_type != str():
-			return f'{self.name}: {(get_python_type_by_function(self.arg_type.lower()))}'
+		if self.name and self.arg_type:
+			return f"{self.name}: {(get_python_type_by_function(self.arg_type))}"
+		elif self.name:
+			return f"{self.name}"
 
 	def __str__(self) -> str:
 		"""
@@ -212,7 +219,7 @@ class Method:
 		"""
 		Get argument(s)
 		:param index: index of element
-		:return: Union[List[Argument], Argument]: argumen(s)
+		:return: Union[List[Argument], Argument]: argument(s)
 		"""
 		if 0 <= index < len(self.arguments):
 			return self.arguments[index]
@@ -224,6 +231,20 @@ class Method:
 		"""
 		args_matches = re.findall("PyTuple_(.*)\(.*,\s*(.*)\s*,\s*&(.*)\)\)", self.content)
 		args_matches = sorted(args_matches, key=lambda tup: tup[1])
+		used_id: List[int] = list()
+		unknown_format: bool = False
+		for match in args_matches:
+			if match[2] not in used_id:
+				used_id.append(match[2])
+			else:
+				unknown_format = True
+		if unknown_format:
+			arg_count: int = int(max(args_matches, key=lambda index: index[1])[1])
+			for i in range(0, arg_count + 1):
+				argument: Argument = Argument(f"unknown_{i}", None)
+				self.add_argument(argument)
+			return
+
 		for match in args_matches:
 			arg: Argument = Argument(match[2], match[0])
 			self.add_argument(arg)
@@ -231,8 +252,7 @@ class Method:
 		return_match: List = re.findall("return\s*Py_BuildValue\(\"(.*)\"", self.content)
 		if return_match:
 			if len(return_match) == 1:
-				return_format: str = return_match[0].replace('#', '').replace('*',
-																			  '')  # Remove unknown format in Python
+				return_format: str = return_match[0].replace('#', '').replace('*', '')  # Remove unknown char Python
 				if len(return_format) == 1:
 					self.set_returned_value(get_python_type_by_letter(return_format.lower()))
 				else:
@@ -254,7 +274,7 @@ class Method:
 			# Arguments
 			if self.arguments:
 				for arg in self.arguments:
-					render += str(arg) + ", "
+					render += arg.render() + ", "
 			render = render[:-2] + ")"
 
 			# Return
@@ -299,6 +319,7 @@ class SrcFile:
 		self.methods: Dict[str, str] = dict()  # s_methods\[\]((.|\n)*){((.|_n)*)} --> {.*\"(.*)\",(.*),.*} --> strip
 		self.methods_list_contents: Dict[str, str] = dict()  # PyObject\s*\*\s*(.*)\(.*\)(.|\n*){(.|\n)*?}
 		self.methods_object: List[Method] = list()
+		self.output: str = str()  # use for do all in one file
 
 	def read_lines(self) -> NoReturn:
 		"""
@@ -372,17 +393,24 @@ class SrcFile:
 		"""
 		Render a module
 		"""
-		if self.module_name == "":
+		if self.module_name == "" or not self.methods_object:
 			return
 		check_render_space()
-		with open(f"{OUTPUT_DIRECTORY}/{self.module_name}.py", "w", encoding="utf-8") as rendering_file:
-			print(f"Rendering {self.module_name}...")
-			write_head_block(rendering_file)
-			rendering_file.write("\n\n")  # Two \n for conventions
-			rendering_file.write(f"class {self.module_name}:")
+		if not MAKE_ALL_IN_ONE_FILE:
+			with open(f"{OUTPUT_DIRECTORY}/{self.module_name}.py", "w", encoding="utf-8") as rendering_file:
+				print(f"Rendering {self.module_name}...")
+				write_head_block(rendering_file)
+				rendering_file.write("\n\n")  # Two \n for conventions
+				rendering_file.write(f"class {self.module_name}:")
+				for method in self.methods_object:
+					rendering_file.write("\n")
+					rendering_file.write(method.render())
+		else:
+			self.output += "\n\n"
+			self.output += f"class {self.module_name}:"
 			for method in self.methods_object:
-				rendering_file.write("\n")
-				rendering_file.write(method.render())
+				self.output += "\n"
+				self.output += method.render()
 
 	def has_module(self) -> bool:
 		"""
@@ -407,7 +435,7 @@ class SrcFiles:
 	def __init__(self, path: str) -> NoReturn:
 		"""
 		Initialization of class
-		:param path: strm path of files
+		:param path: str: path of files
 		"""
 		self.files: List[SrcFile] = list()
 		self.path: str = path
@@ -445,6 +473,13 @@ class SrcFiles:
 
 		for file in self.files:
 			file.render()
+
+		if MAKE_ALL_IN_ONE_FILE:
+			with open("bin/modules.py", "w", encoding="utf-8") as render_file:
+				print("Rendering modules.py..")
+				write_head_block(render_file)
+				for file in self.files:
+					render_file.write(file.output)
 
 	def __str__(self) -> str:
 		"""
