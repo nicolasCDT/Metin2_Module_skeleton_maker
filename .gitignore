@@ -125,5 +125,6 @@ dmypy.json
 .pyre/
 .idea/
 
+#Ignore folder
 bin/
 src/

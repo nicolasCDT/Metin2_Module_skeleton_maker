@@ -21,7 +21,7 @@ __status__ = "development"
 OUTPUT_DIRECTORY: str = 'bin'
 INPUT_DIRECTORY: str = 'src'
 
-MAKE_ALL_IN_ONE_FILE: bool = False
+MAKE_ALL_IN_ONE_FILE: bool = True
 
 # DEVELOPMENT CONSTANTS
 FUNCTIONS_TYPE_CORRESPONDENCES: dict = {
