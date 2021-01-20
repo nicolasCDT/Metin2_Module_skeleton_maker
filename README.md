@@ -24,7 +24,7 @@ Modules used:
 
 ## Authors
 
-* Takuma - [Email](mailto:dev.takuma@gmail.com), Discord: Takuma#0075
+* Takuma - Discord: Takuma#0075
 
 Thanks to Gurgarath for his help.
 

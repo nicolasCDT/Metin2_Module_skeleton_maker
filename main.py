@@ -14,7 +14,6 @@ from typing import IO
 
 __author__ = "Takuma"
 __version__ = "1.0"
-__email__ = "dev.takuma@gmail.com"
 __status__ = "development"
 
 # CONFIGURATION BLOCK
@@ -110,7 +109,6 @@ def write_head_block(file: IO, ) -> NoReturn:
 
 __author__ = "Takuma"
 __version__ = "1.0"
-__email__ = "dev.takuma@gmail.com"
 __status__ = "development"
 
 
