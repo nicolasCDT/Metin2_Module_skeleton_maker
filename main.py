@@ -6,11 +6,11 @@
 
 # -*- coding: <utf-8> -*-
 
-import os
 import glob
+import os
+import re
 from typing import *
 from typing import IO
-import re
 
 __author__ = "Takuma"
 __version__ = "1.0"
@@ -20,8 +20,6 @@ __status__ = "development"
 # CONFIGURATION BLOCK
 OUTPUT_DIRECTORY: str = 'bin'
 INPUT_DIRECTORY: str = 'src'
-
-MAKE_ALL_IN_ONE_FILE: bool = True
 
 # DEVELOPMENT CONSTANTS
 FUNCTIONS_TYPE_CORRESPONDENCES: dict = {
@@ -44,6 +42,12 @@ LETTER_TYPE_CORRESPONDENCES: dict = {
 	'l': "int",
 	'f': "float",
 	'b': "bool"
+}
+
+CONSTANTS_FUNCTION: Dict[str, type] = {
+	"PyModule_AddIntConstant": int,
+	"PyModule_AddStringConstant": str
+	# Add new type in Constant's render method
 }
 
 RESERVED_KEYWORD: list = [
@@ -112,7 +116,7 @@ __status__ = "development"
 
 #  Copyright (c) 2021, Takuma.
 #  Respect intellectual property, and do not delete these comments.
-#  Thanks to Gurgarath for his help !
+#  Thanks to Gurgarath for his help for one regex !
 """)
 
 
@@ -241,7 +245,7 @@ class Method:
 		if unknown_format:
 			arg_count: int = int(max(args_matches, key=lambda index: index[1])[1])
 			for i in range(0, arg_count + 1):
-				argument: Argument = Argument(f"unknown_{i}", None)
+				argument: Argument = Argument(f"unknown_{i}=None", None)
 				self.add_argument(argument)
 			return
 
@@ -269,13 +273,15 @@ class Method:
 		:return: str: function's render
 		"""
 		if self.name != str():
-			render: str = f"\tdef {self.name}(self, "  # def xxx(self,_
+			render: str = f"def {self.name}("  # def xxx(self,_
 
 			# Arguments
 			if self.arguments:
 				for arg in self.arguments:
 					render += arg.render() + ", "
-			render = render[:-2] + ")"
+				render = render[:-2] + ")"
+			else:
+				render += ")"
 
 			# Return
 			render += " -> "
@@ -286,7 +292,7 @@ class Method:
 			render += ":"
 
 			# Body
-			render += "\n\t\tpass\n"
+			render += "\n\tpass\n"
 
 			return render
 		return ""
@@ -302,6 +308,40 @@ class Method:
 		)
 
 
+class Constant:
+	"""
+	Class to modeling a constant
+	"""
+
+	def __init__(self, name: str, value: type) -> NoReturn:
+		"""
+		Initialization of Constant
+		:param name: str: Constant's name
+		:param value: Union[str, int]: Constant's value
+		"""
+		self.name: str = name
+		self.value: type = value
+
+	def render(self) -> str:
+		"""
+		Return a string who represents the constant in Python
+		:return: str: representation
+		"""
+		type_output: Union[str, int] = ""
+		if self.value is int:
+			type_output = 1
+		elif self.value is str:
+			type_output = "''"
+		return f"{self.name} = {type_output}"
+
+	def __str__(self) -> str:
+		"""
+		Representation in Python
+		:return: str: representation
+		"""
+		return f"{self.name} = {self.value}"
+
+
 class SrcFile:
 	"""
 	Modeling of one source file
@@ -315,11 +355,11 @@ class SrcFile:
 		self.lines: List[str] = list()
 		self.module_name: str = str()
 		self.methods_dic_name: str = str()
-		self.constants: str = str()  # s_methods
+		self.constants: List[Constant] = list()
+		self.constants_name: List[str] = list()
 		self.methods: Dict[str, str] = dict()  # s_methods\[\]((.|\n)*){((.|_n)*)} --> {.*\"(.*)\",(.*),.*} --> strip
 		self.methods_list_contents: Dict[str, str] = dict()  # PyObject\s*\*\s*(.*)\(.*\)(.|\n*){(.|\n)*?}
 		self.methods_object: List[Method] = list()
-		self.output: str = str()  # use for do all in one file
 
 	def read_lines(self) -> NoReturn:
 		"""
@@ -380,6 +420,23 @@ class SrcFile:
 			function.process()
 			self.methods_object.append(function)
 
+	def read_constant(self) -> NoReturn:
+		"""
+		Read file's content to find constant and add them to the class
+		"""
+		content: str = "".join(self.lines)
+		for constant_declaration in CONSTANTS_FUNCTION.keys():
+			constants: List = re.findall("{}\(.*\"(.*)\",\s*.*\)".format(
+				constant_declaration
+			), content)
+			for constant in constants:
+				if constant not in self.constants_name:
+					self.constants_name.append(constant)
+					self.constants.append(Constant(
+						constant,
+						CONSTANTS_FUNCTION[constant_declaration]
+					))
+
 	def process(self) -> NoReturn:
 		"""
 		Work on the file
@@ -388,6 +445,7 @@ class SrcFile:
 		self.read_module_name()
 		self.read_module_content()
 		self.read_functions()
+		self.read_constant()
 
 	def render(self) -> NoReturn:
 		"""
@@ -396,21 +454,15 @@ class SrcFile:
 		if self.module_name == "" or not self.methods_object:
 			return
 		check_render_space()
-		if not MAKE_ALL_IN_ONE_FILE:
-			with open(f"{OUTPUT_DIRECTORY}/{self.module_name}.py", "w", encoding="utf-8") as rendering_file:
-				print(f"Rendering {self.module_name}...")
-				write_head_block(rendering_file)
-				rendering_file.write("\n\n")  # Two \n for conventions
-				rendering_file.write(f"class {self.module_name}:")
-				for method in self.methods_object:
-					rendering_file.write("\n")
-					rendering_file.write(method.render())
-		else:
-			self.output += "\n\n"
-			self.output += f"class {self.module_name}:"
+		with open(f"{OUTPUT_DIRECTORY}/{self.module_name}.py", "w", encoding="utf-8") as rendering_file:
+			print(f"Rendering {self.module_name}...")
+			write_head_block(rendering_file)
+			for constant in self.constants:
+				rendering_file.write("\n")
+				rendering_file.write(constant.render())
 			for method in self.methods_object:
-				self.output += "\n"
-				self.output += method.render()
+				rendering_file.write("\n\n")
+				rendering_file.write(method.render())
 
 	def has_module(self) -> bool:
 		"""
@@ -473,13 +525,6 @@ class SrcFiles:
 
 		for file in self.files:
 			file.render()
-
-		if MAKE_ALL_IN_ONE_FILE:
-			with open("bin/modules.py", "w", encoding="utf-8") as render_file:
-				print("Rendering modules.py..")
-				write_head_block(render_file)
-				for file in self.files:
-					render_file.write(file.output)
 
 	def __str__(self) -> str:
 		"""
