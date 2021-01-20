@@ -124,7 +124,3 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .idea/
-
-#Ignore folder
-bin/
-src/
