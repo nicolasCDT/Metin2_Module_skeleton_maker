@@ -30,6 +30,7 @@ FUNCTIONS_TYPE_CORRESPONDENCES: dict = {
 	"GetUnsignedLong": "int",
 	"GetUnsignedInteger": "int",
 	"GetString": "str",
+	"GetWindow": "int",
 	"GetBoolean": "bool",
 	"GetObject": "object"
 }
@@ -260,8 +261,13 @@ class Method:
 				else:
 					output_str: str = "Tuple["
 					for letter in return_format:
-						output_str += get_python_type_by_letter(letter.lower())
-						output_str += ", "
+						if letter == '(':
+							output_str += "Tuple["
+						elif letter == ')':
+							output_str += "], "
+						else:
+							output_str += get_python_type_by_letter(letter.lower())
+							output_str += ", "
 					output_str = output_str[:-2] + "]"
 					self.set_returned_value(output_str)
 
