@@ -32,6 +32,10 @@ FUNCTIONS_TYPE_CORRESPONDENCES: dict = {
 	"GetString": "str",
 	"GetWindow": "int",
 	"GetBoolean": "bool",
+	"GetTextInstance": "int",
+	"GetThingInstance": "int",
+	"GetImageInstance": "int",
+	"GetExpandedImageInstance": "int",
 	"GetObject": "object"
 }
 
@@ -145,10 +149,16 @@ class Argument:
 		self.arg_type: Union[str, None] = arg_type
 		self.check_name()
 
-	def check_name(self):
+	def check_name(self) -> NoReturn:
+		"""
+		Check if name doesn't contains reserved word
+			Example:
+				It changes from to _from
+				It changes cWindows->Var to cWindows_Var
+		"""
 		if self.name in RESERVED_KEYWORD:
 			self.name = '_' + self.name
-		self.name = self.name.replace(".", "")
+		self.name = self.name.replace(".", "_")
 
 	def render(self) -> Union[str, None]:
 		"""
