@@ -22,11 +22,19 @@ Modules used:
 * Launch **main.py** with `py main.py`.
 * Get output in **bin** folder.
 
+## Next Stape ?
+To continue, you can use [VegaS](https://github.com/Vegas007/)'s script to convert your python2 code to python3 : [Script here](https://github.com/Vegas007/Python-Code-Translator-2-to-3). 
+This will adapt your code to be usable both in python2 and python 3
+
 ## Authors
 
 * Takuma - [Email](mailto:work.takuma@gmail.com) - Discord: Takuma#0075
 
-Thanks to Gurgarath for his help.
+### Thanks
+
+* Gurgarath for his help with regex.
+* VegaS for his tools to convert py2 code to py3.
+* Mali61 for having complete C++ functions list.
 
 ## License
 
