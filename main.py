@@ -554,7 +554,7 @@ def process() -> NoReturn:
 	"""
 	print("Getting all files in src directory")
 
-	files = SrcFiles('src')
+	files = SrcFiles(INPUT_DIRECTORY)
 	files.process()
 
 
