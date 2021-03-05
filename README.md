@@ -35,6 +35,7 @@ This will adapt your code to be usable both in python2 and python 3
 * Gurgarath for his help with regex.
 * VegaS for his tools to convert py2 code to py3.
 * Mali61 for having complete C++ functions list.
+* Arves100 to have corrected something forgotten in the code.
 
 ## License
 
