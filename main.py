@@ -15,6 +15,7 @@ from typing import IO
 __author__ = "Takuma"
 __version__ = "1.0"
 __status__ = "development"
+__credits__  = ["Takuma", "Gurgarath", "VegaS", "Mali61", "Arves100"]
 
 # CONFIGURATION BLOCK
 OUTPUT_DIRECTORY: str = 'bin'
