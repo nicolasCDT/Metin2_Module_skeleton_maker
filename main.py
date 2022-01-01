@@ -303,7 +303,7 @@ class Method:
 			if self.returned_value:
 				render += self.returned_value
 			else:
-				render += "NoReturn"
+				render += "None"
 			render += ":"
 
 			# Body
