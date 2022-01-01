@@ -36,6 +36,7 @@ This will adapt your code to be usable both in python2 and python 3
 * [VegaS](https://github.com/Vegas007) for his tools to convert py2 code to py3.
 * [Mali61](https://github.com/blackdragonx61) for having complete C++ functions list.
 * [Arves100](https://github.com/arves100) to have corrected something forgotten in the code.
+* msnas on [metin2dev](https://metin2.dev/profile/16588-msnas/) to have corrected the return type (NoReturn -> None)
 
 ## License
 
