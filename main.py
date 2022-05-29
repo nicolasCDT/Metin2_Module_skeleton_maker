@@ -20,6 +20,7 @@ __credits__ = [
 	"Mali61",  # Completed functions list
 	"Arves100",  # Fixed something forgotten in code
 	"msnas"  # Fixed return type (NoReturn -> None)
+    "NewWars"  # Command arguments options
 ]
 
 from skeleton_maker import CONSTANTS
