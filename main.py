@@ -19,7 +19,7 @@ __credits__ = [
 	"VegaS",  # Tools to convert Python2 to Python3
 	"Mali61",  # Completed functions list
 	"Arves100",  # Fixed something forgotten in code
-	"msnas"  # Fixed return type (NoReturn -> None)
+	"msnas",  # Fixed return type (NoReturn -> None)
 	"NewWars"  # Command arguments options
 ]
 
