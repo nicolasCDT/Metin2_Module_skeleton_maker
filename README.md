@@ -19,12 +19,9 @@ You can now configure some parameters like the use of the snake case for
 method arguments in **CONSTANTS.py** (skeleton_maker folder).
 
 ## How to use :
+Execute the main script by doing `python main.py --help` to see the options
 
-* Put your src files with .cpp in **src** folder.
-* Launch **main.py** with `py main.py`.
-* Get output in **bin** folder.
-
-## Next Stape ?
+## Next Steps ?
 To continue, you can use [VegaS](https://github.com/Vegas007/)'s script to convert your python2 code to python3 : [Script here](https://github.com/Vegas007/Python-Code-Translator-2-to-3). 
 This will adapt your code to be usable both in python2 and python 3
 
@@ -39,6 +36,7 @@ This will adapt your code to be usable both in python2 and python 3
 * [Mali61](https://github.com/blackdragonx61) for having complete C++ functions list.
 * [Arves100](https://github.com/arves100) to have corrected something forgotten in the code.
 * msnas on [metin2dev](https://metin2.dev/profile/16588-msnas/) to have corrected the return type (NoReturn -> None)
+* [NewWars](https://github.com/OriDevTeam) for command arguments options
 
 ## License
 

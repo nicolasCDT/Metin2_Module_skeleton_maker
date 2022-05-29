@@ -124,3 +124,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .idea/
+
+# Source Input and Skeletons Output
+src/
+bin/
