@@ -84,8 +84,8 @@ class SourceFile:
 				)
 
 		# If object isn't returned, module can't have constant -> End of reading()
-		if not object_name:
-			return
+		# if not object_name:
+			# return
 
 		# Find all constants :
 		# For each function used to register constants:
