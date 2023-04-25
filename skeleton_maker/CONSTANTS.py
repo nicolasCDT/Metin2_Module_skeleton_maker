@@ -37,7 +37,9 @@ LETTER_TYPE_CORRESPONDENCES: Dict[str, Type] = {
 	'c': int,
 	'l': int,
 	'f': float,
-	'b': bool
+	'b': bool,
+	'O': object,
+	'L': int,
 }
 
 # Functions used to define new constants. {C++ Function:  Python type}
