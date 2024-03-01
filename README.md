@@ -27,7 +27,7 @@ This will adapt your code to be usable both in python2 and python 3
 
 ## Authors
 
-* Takuma - [Email](mailto:work.takuma@gmail.com) - Discord: Takuma#2725
+* Takuma - [Email](mailto:nicolas@coudert.pro) - Discord: nicolascdt
 
 ### Thanks
 
